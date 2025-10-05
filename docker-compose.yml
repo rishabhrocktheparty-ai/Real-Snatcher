@@ -1,0 +1,55 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    container_name: real-snatcher-backend
+    env_file:
+      - .env.example
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    networks:
+      - snatcher-net
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: real-snatcher-frontend
+    env_file:
+      - ./client/.env.example
+    ports:
+      - "3000:3000"
+    networks:
+      - snatcher-net
+
+  redis:
+    image: redis:7.2.4
+    container_name: real-snatcher-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - snatcher-net
+
+  ml_worker:
+    build:
+      context: .
+      dockerfile: ./mlops/Dockerfile.ml
+    container_name: real-snatcher-mlworker
+    env_file:
+      - .env.example
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - snatcher-net
+    environment:
+      - USE_FAKE_GPU=True
+
+networks:
+  snatcher-net:
+    driver: bridge

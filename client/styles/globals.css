@@ -1,0 +1,5 @@
+/* globals.css */
+/* Tailwind CSS base styles for Real-Snatcher UI */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
