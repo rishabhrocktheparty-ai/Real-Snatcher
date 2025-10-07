@@ -8,14 +8,23 @@ FROM python:3.10-slim
 LABEL maintainer="Real-Snatcher MLOps"
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	ffmpeg \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY ../../requirements.txt ./requirements.txt
+# Copy requirements from repository root into build context
+COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy worker code
+# Copy entire repository into /app so mlops can import api and other packages
 WORKDIR /app
-COPY . .
+COPY . /app
 
-CMD ["python", "mlops/ml_worker.py"]
+# Ensure python can import top-level packages
+ENV PYTHONPATH=/app
+
+# Run the worker as a module to keep imports consistent
+CMD ["python", "-m", "mlops.ml_worker"]
