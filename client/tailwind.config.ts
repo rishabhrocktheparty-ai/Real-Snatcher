@@ -11,14 +11,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'deep-cobalt': '#06102B', // background base
-        'electric-pink': '#FF2D95',
-        'cyber-green': '#00FFA3',
+        'deep-cobalt': '#0b1b3a',
+        'electric-pink': '#ff2d95',
+        'cyber-green': '#00ffa3',
+        'neon-blue': '#00b3ff',
         'neon-yellow': '#FACC15',
         'glass': 'rgba(255,255,255,0.04)'
       },
-      fontFamily: {
-        display: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      keyframes: {
+        floatGrid: {
+          '0%': { transform: 'translateY(0) translateX(0) scale(1)' },
+          '50%': { transform: 'translateY(-6px) translateX(6px) scale(1.02)' },
+          '100%': { transform: 'translateY(0) translateX(0) scale(1)' }
+        },
+        binaryFlow: {
+          '0%': { backgroundPosition: '0 0' },
+          '100%': { backgroundPosition: '100% 0' }
+        }
+      },
+      animation: {
+        floatGrid: 'floatGrid 8s ease-in-out infinite',
+        binaryFlow: 'binaryFlow 12s linear infinite'
       }
     }
   },

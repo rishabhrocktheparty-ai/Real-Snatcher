@@ -5,8 +5,18 @@
 
 
 # Refactored for async queue and simulated S3 result writing
+import sys
+import pathlib
 import asyncio
 import os
+
+# Ensure the repository root is on sys.path so 'import api' works inside Docker
+# When the container copies files into /app, Python may not automatically
+# resolve top-level packages. We add the parent directory to sys.path.
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from api.crud import update_job_status, set_job_result, get_job
 from mlops.processing.bg_swap import BgSwapAPIClient
 from mlops.processing.face_swap import FaceSwapAPIClient
@@ -44,6 +54,25 @@ async def process_job(job_id, queue: AsyncJobQueue):
             FaceSwapAPIClient().perform_face_swap(payload["video_url"], payload.get("face_image_url"))
         elif payload["task_type"] == "action_swap":
             run_action_swap(payload["video_url"], payload.get("target_action_prompt"))
+        elif payload["task_type"] == "audio_swap":
+            # Replace audio track on an already-produced video or the input video
+            from mlops.processing.audio_swap import replace_audio
+            src_video = payload.get("video_url") or payload.get("result_of_previous")
+            audio = payload.get("audio_url")
+            out = f"{RESULTS_PATH}/{job_id}_audio.mp4"
+            if src_video and audio:
+                replace_audio(src_video, audio, out)
+                result_url = generate_s3_url(f"{job_id}_audio")
+                set_job_result(job_id, result_url)
+        elif payload["task_type"] == "text_overlay":
+            from mlops.processing.text_overlay import apply_text_overlay
+            src_video = payload.get("video_url") or payload.get("result_of_previous")
+            overlay = payload.get("text_overlay") or {}
+            out = f"{RESULTS_PATH}/{job_id}_overlay.mp4"
+            if src_video and overlay:
+                apply_text_overlay(src_video, out, overlay.get("text_content",""), overlay.get("position","bottom-center"), overlay.get("font_family","DejaVu-Sans"), overlay.get("neon_color","#00ffa3"))
+                result_url = generate_s3_url(f"{job_id}_overlay")
+                set_job_result(job_id, result_url)
         # Simulate result file creation
         result_path = f"{RESULTS_PATH}/{job_id}.mp4"
         with open(result_path, "wb") as f:
