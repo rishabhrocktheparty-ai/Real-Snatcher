@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Python dependencies
 # Copy requirements from repository root into build context
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies from the copied requirements file
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy entire repository into /app so mlops can import api and other packages

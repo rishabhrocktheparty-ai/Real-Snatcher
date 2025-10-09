@@ -5,7 +5,7 @@
 
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from pydantic import BaseModel, Field
+from api.schemas import JobPayload
 import uuid
 from api.crud import create_job, update_job_status, set_job_result, get_job
 from loguru import logger
@@ -15,17 +15,10 @@ job_queue = []
 
 router = APIRouter()
 
-class JobRequest(BaseModel):
-    video_url: str = Field(..., description="Pre-signed S3 URL simulation")
-    task_type: str = Field(..., description="Transformation type: 'face_swap', 'bg_swap', 'action_swap', etc.")
-    face_image_url: str = Field(None, description="Optional for face swap")
-    target_action_prompt: str = Field(None, description="Optional for action swap")
-
 @router.post("/", status_code=202)
-async def submit_job(request: JobRequest, background_tasks: BackgroundTasks):
+async def submit_job(request: JobPayload, background_tasks: BackgroundTasks):
     """
-    Submit a new transformation job. Instantly returns a job_id and HTTP 202 Accepted.
-    Job is pushed to the simulated queue for asynchronous processing.
+    Submit a new transformation job. Accepts flexible inputs: video_url, audio_url, face_image_url, text_overlay, etc.
     """
     try:
         job_id = str(uuid.uuid4())
@@ -37,6 +30,8 @@ async def submit_job(request: JobRequest, background_tasks: BackgroundTasks):
     except Exception as e:
         logger.error(f"Error submitting job: {e}")
         raise HTTPException(status_code=500, detail="Failed to submit job")
+
+
 
 @router.get("/{job_id}")
 async def get_job_status(job_id: str):
